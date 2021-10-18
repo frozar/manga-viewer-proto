@@ -8,13 +8,18 @@
     "start": "next start",
     "lint": "next lint"
   },
-  "dependencies": {
-    "next": "11.1.2",
-    "react": "17.0.2",
-    "react-dom": "17.0.2"
-  },
   "devDependencies": {
     "eslint": "7.32.0",
     "eslint-config-next": "11.1.2"
+  },
+  "dependencies": {
+    "@react-spring/web": "^9.3.0",
+    "@use-gesture/react": "^10.1.0",
+    "lodash-es": "^4.17.15",
+    "lodash-move": "^1.1.1",
+    "lodash.clamp": "^4.0.3",
+    "next": "^11.1.2",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2"
   }
 }
