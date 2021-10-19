@@ -14,10 +14,10 @@ const pages = [
   "https://lelscans.net/mangas/one-piece/1028/06.png",
 ];
 
-const initialIndex = 4;
+const initialIndex = 3;
 
 const isNextToCurrentImage = (currentIndex, i) => {
-  const neighbourhood = 2;
+  const neighbourhood = 3;
   return currentIndex - neighbourhood <= i && i <= currentIndex + neighbourhood;
 };
 
@@ -34,7 +34,7 @@ const computeScaleFactor = (currentIndex, i) => {
   return scaleFactor;
 };
 
-const computeScaleEffective = (
+const computeScaleAnimation = (
   currentIndex,
   i,
   isMxPositive,
@@ -100,14 +100,14 @@ const computeXoriginAnimation = (
       index.current,
       i
     );
-    const currentScaleEffective = computeScaleEffective(
+    const currentScaleAnimation = computeScaleAnimation(
       index.current,
       i,
       isMxPositive,
       animationPourcentage
     );
     const currentScaledWidth =
-      currentScreenConstrainedWidth * currentScaleEffective + imageMargin;
+      currentScreenConstrainedWidth * currentScaleAnimation + imageMargin;
     xOrigin = nextXOffsetOrigin - currentScaledWidth - xOriginMargin;
   } else if (i - index.current === 0) {
     const [screenConstrainedWidth] = screenConstrainedImageSize(
@@ -116,13 +116,13 @@ const computeXoriginAnimation = (
       index.current,
       i
     );
-    const scaleEffective = computeScaleEffective(
+    const scaleAnimation = computeScaleAnimation(
       index.current,
       i,
       isMxPositive,
       animationPourcentage
     );
-    const scaledWidth = screenConstrainedWidth * scaleEffective + imageMargin;
+    const scaledWidth = screenConstrainedWidth * scaleAnimation + imageMargin;
     xOrigin = (viewport.width - scaledWidth) / 2;
   } else if (1 <= i - index.current) {
     const previousXOffsetOrigin = computeXoriginAnimation(
@@ -139,14 +139,14 @@ const computeXoriginAnimation = (
       index.current,
       i
     );
-    const scaleEffective = computeScaleEffective(
+    const scaleAnimation = computeScaleAnimation(
       index.current,
       i - 1,
       isMxPositive,
       animationPourcentage
     );
     const previousScaledWidth =
-      previousScreenConstrainedWidth * scaleEffective + imageMargin;
+      previousScreenConstrainedWidth * scaleAnimation + imageMargin;
 
     xOrigin = previousXOffsetOrigin + previousScaledWidth + xOriginMargin;
   }
@@ -158,7 +158,7 @@ function Viewpager(props) {
   const index = useRef(initialIndex);
 
   const {
-    state: { images, viewport, api, ready },
+    state: { images, viewport, api },
     springProps,
   } = props;
 
@@ -219,15 +219,20 @@ function Viewpager(props) {
             const x = xOrigin + xOffset;
 
             // Compute scale animation
-            const scaleOrigin = computeScaleFactor(index.current, i);
+            const scaleOrigin = computeScaleAnimation(
+              index.current,
+              i,
+              true,
+              0
+            );
 
-            const scaleEffective = computeScaleEffective(
+            const scaleAnimation = computeScaleAnimation(
               index.current,
               i,
               isMxPositive,
               animationPourcentage
             );
-            const scale = active ? scaleEffective : scaleOrigin;
+            const scale = active ? scaleAnimation : scaleOrigin;
 
             // Compute color animation
             const nbColor = 8;
@@ -362,66 +367,63 @@ function Viewpager(props) {
     };
   }, [handleKeyDown]);
 
-  if (!ready) {
-    return "Wait a moment please.";
-  } else {
-    return (
-      <div className="wrapper">
-        {springProps.map(
-          (
-            { x, display, scale, backgroundColor, scaledWidth, scaledHeight },
-            i
-          ) => {
-            let [screenConstrainedWidth, screenConstrainedHeight] =
-              screenConstrainedImageSize(
-                images[pages[i]],
-                viewport,
-                index.current,
-                i
-              );
+  return (
+    <div className="wrapper">
+      {springProps.map(
+        (
+          { x, display, scale, backgroundColor, scaledWidth, scaledHeight },
+          i
+        ) => {
+          let [screenConstrainedWidth, screenConstrainedHeight] =
+            screenConstrainedImageSize(
+              images[pages[i]],
+              viewport,
+              index.current,
+              i
+            );
 
-            return (
+          return (
+            <animated.div
+              className="page"
+              {...bind()}
+              key={i}
+              style={{
+                display,
+                x,
+                backgroundColor,
+                zIndex: pages.length - i,
+              }}
+            >
               <animated.div
-                className="page"
-                {...bind()}
-                key={i}
                 style={{
-                  display,
-                  x,
-                  backgroundColor,
-                  zIndex: pages.length - i,
+                  scale,
+                  display: "flex",
+                  alignItems: "center",
+                  // transformOrigin: "bottom center",
+                  transformOrigin: "left",
+                  width: scaledWidth,
                 }}
               >
-                <animated.div
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`${pages[i]}`}
+                  alt="manga"
+                  width={screenConstrainedWidth}
+                  height={screenConstrainedHeight}
                   style={{
-                    scale,
-                    display: "flex",
-                    alignItems: "center",
-                    // transformOrigin: "bottom center",
-                    transformOrigin: "left",
-                    width: scaledWidth,
+                    position: "relative",
+                    marginLeft: "2px",
+                    marginRight: "2px",
                   }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`${pages[i]}`}
-                    alt="manga"
-                    width={screenConstrainedWidth}
-                    height={screenConstrainedHeight}
-                    style={{
-                      position: "relative",
-                      marginLeft: "2px",
-                      marginRight: "2px",
-                    }}
-                    onDragStart={(e) => {
-                      e.preventDefault();
-                    }}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                    }}
-                  />
-                </animated.div>
-                {/* <div
+                  onDragStart={(e) => {
+                    e.preventDefault();
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                  }}
+                />
+              </animated.div>
+              {/* <div
                   style={{
                     backgroundColor: "#000A",
                     // width: adjustedWidth,
@@ -432,152 +434,15 @@ function Viewpager(props) {
                     top: 0,
                   }}
                 /> */}
-              </animated.div>
-            );
-          }
-        )}
-      </div>
-    );
-  }
+            </animated.div>
+          );
+        }
+      )}
+    </div>
+  );
 }
 
-// function ViewpagerLoader() {
-//   const [state, setState] = React.useState({
-//     viewport: { width: 1280, height: 960 },
-//     images: {},
-//     ready: false,
-//     api: null,
-//   });
-
-//   const handleResize = React.useCallback(() => {
-//     if (
-//       state.viewport.width !== window.innerWidth ||
-//       state.viewport.height !== window.innerHeight
-//     ) {
-//       setState({
-//         ...state,
-//         viewport: { width: window.innerWidth, height: window.innerHeight },
-//       });
-//     }
-//   }, [state]);
-
-//   React.useEffect(() => {
-//     window.addEventListener("resize", handleResize);
-//     return () => {
-//       window.removeEventListener("resize", handleResize);
-//     };
-//   }, [handleResize]);
-
-//   React.useEffect(() => {
-//     let updateViewport = false;
-//     let viewportWk = { width: 1280, height: 960 };
-//     if (
-//       typeof window !== "undefined" &&
-//       state.viewport.width !== window.innerWidth &&
-//       state.viewport.height !== window.innerHeight
-//     ) {
-//       updateViewport = true;
-//       viewportWk = { width: window.innerWidth, height: window.innerHeight };
-//     }
-
-//     let updateImages = false;
-//     const toLoad = {};
-//     for (const pageURL of pages) {
-//       if (
-//         state.images[pageURL] === undefined ||
-//         state.images[pageURL].src !== pageURL
-//       ) {
-//         const img = new Image();
-//         img.src = pageURL;
-//         toLoad[pageURL] = img;
-//         updateImages = true;
-//       }
-//     }
-
-//     if (updateViewport || updateImages) {
-//       if (updateViewport && updateImages) {
-//         setState({
-//           ...state,
-//           images: { ...toLoad },
-//           viewport: viewportWk,
-//         });
-//       } else if (updateViewport) {
-//         setState({
-//           ...state,
-//           viewport: viewportWk,
-//         });
-//       } else if (updateImages) {
-//         setState({ ...state, images: { ...toLoad } });
-//       }
-//     }
-//   }, [state]);
-
-//   const [springProps, api] = useSprings(pages.length, (i) => {
-//     return {
-//       x: i * state.viewport.width,
-//       scale: 1,
-//       display: "block",
-//       backgroundColor: "#000",
-//       scaledWidth: null,
-//       scaledHeight: null,
-//     };
-//   });
-
-//   React.useEffect(() => {
-//     if (
-//       !state.ready &&
-//       pages.filter((pageURL) => state.images[pageURL] !== undefined).length ===
-//         pages.length
-//     ) {
-//       api.start((i) => {
-//         if (!isNextToCurrentImage(initialIndex, i)) {
-//           return {
-//             display: "none",
-//             backgroundColor: "#000",
-//           };
-//         } else {
-//           const xOrigin = computeXoriginAnimation(
-//             { current: initialIndex },
-//             i,
-//             state.images,
-//             state.viewport,
-//             true,
-//             0
-//           );
-//           const scaleFactor = computeScaleFactor(initialIndex, i);
-
-//           // This 'imageMargin' variable is directly link to the margin applied
-//           // to an image:
-//           // marginLeft: "2px",
-//           // marginRight: "2px",
-//           const imageMargin = 4;
-
-//           let [screenConstrainedWidth, screenConstrainedHeight] =
-//             screenConstrainedImageSize(
-//               state.images[pages[i]],
-//               state.viewport,
-//               initialIndex,
-//               i
-//             ).map((x) => x * scaleFactor + imageMargin);
-//           return {
-//             from: {
-//               x: xOrigin,
-//               scale: scaleFactor,
-//               display: "block",
-//               backgroundColor: "#000",
-//               scaledWidth: screenConstrainedWidth,
-//               scaledHeight: screenConstrainedHeight,
-//             },
-//           };
-//         }
-//       });
-
-//       setState({ ...state, api: api, ready: true });
-//     }
-//   }, [api, state]);
-
-//   return <Viewpager state={state} springProps={springProps} />;
-// }
+// let touchImages = 0;
 
 export default function App() {
   const [state, setState] = React.useState({
@@ -587,6 +452,9 @@ export default function App() {
     api: null,
   });
 
+  const [touchImages, setTouchImages] = React.useState({ value: false });
+
+  // Update the viewport
   const handleResize = React.useCallback(() => {
     if (
       state.viewport.width !== window.innerWidth ||
@@ -599,6 +467,7 @@ export default function App() {
     }
   }, [state]);
 
+  // Trigger a viewport update if the size of the window change
   React.useEffect(() => {
     window.addEventListener("resize", handleResize);
     return () => {
@@ -606,6 +475,7 @@ export default function App() {
     };
   }, [handleResize]);
 
+  // Initialise the viewport and the images
   React.useEffect(() => {
     let updateViewport = false;
     let viewportWk = { width: 1280, height: 960 };
@@ -627,6 +497,18 @@ export default function App() {
       ) {
         const img = new Image();
         img.src = pageURL;
+        img.loading = "eager";
+        // img.onerror = () => {
+        //   console.error("Error on", pageURL);
+        // };
+        img.onload = () => {
+          // setTouchImages(touchImages + 1);
+          // touchImages += 1;
+          // setTouchImages(!touchImages);
+          setTouchImages({ ...touchImages, value: !touchImages.value });
+          // console.log(`Image ${pageURL} loaded.`);
+          // console.log(`0 touchImages ${touchImages.value}`);
+        };
         toLoad[pageURL] = img;
         updateImages = true;
       }
@@ -648,28 +530,41 @@ export default function App() {
         setState({ ...state, images: { ...toLoad } });
       }
     }
-  }, [state]);
+  }, [state, touchImages]);
 
+  // Setup the Spring api
   const [springProps, api] = useSprings(pages.length, (i) => {
     return {
       x: i * state.viewport.width,
       scale: 1,
       display: "block",
       backgroundColor: "#000",
-      scaledWidth: null,
-      scaledHeight: null,
+      scaledWidth: 0,
+      scaledHeight: 0,
     };
   });
 
+  // If every image was setup, is the spring values and the ready flag
   React.useEffect(() => {
     if (
       !state.ready &&
-      pages.filter((pageURL) => state.images[pageURL] !== undefined).length ===
-        pages.length
+      pages.filter(
+        (pageURL) =>
+          state.images[pageURL] !== undefined && state.images[pageURL].complete
+      ).length === pages.length
     ) {
       api.start((i) => {
         if (!isNextToCurrentImage(initialIndex, i)) {
+          const xOrigin = computeXoriginAnimation(
+            { current: initialIndex },
+            i,
+            state.images,
+            state.viewport,
+            true,
+            0
+          );
           return {
+            x: xOrigin,
             display: "none",
             backgroundColor: "#000",
           };
@@ -710,9 +605,13 @@ export default function App() {
         }
       });
 
-      setState({ ...state, api: api, ready: true });
+      setState({
+        ...state,
+        api: api,
+        ready: true,
+      });
     }
-  }, [api, state]);
+  }, [api, state, touchImages]);
 
   return (
     <>
@@ -721,7 +620,11 @@ export default function App() {
         <link rel="stylesheet" href="./styles.module.css" media="all" />
       </Head>
       <div className="flex fill center">
-        <Viewpager state={state} springProps={springProps} />
+        {state.ready ? (
+          <Viewpager state={state} springProps={springProps} />
+        ) : (
+          "Wait a moment please."
+        )}
       </div>
     </>
   );
