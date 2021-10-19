@@ -154,6 +154,8 @@ const computeXoriginAnimation = (
   return xOrigin;
 };
 
+// let index = initialIndex;
+
 function Viewpager(props) {
   const index = useRef(initialIndex);
 
@@ -595,8 +597,63 @@ export default function App() {
         ...state,
         viewport,
       });
+
+      if (state.api !== null) {
+        // TODO: use the current index instead of initialIndex
+        api.start((i) => {
+          if (!isNextToCurrentImage(initialIndex, i)) {
+            const xOrigin = computeXoriginAnimation(
+              { current: initialIndex },
+              i,
+              state.images,
+              viewport,
+              true,
+              0
+            );
+            return {
+              x: xOrigin,
+              display: "none",
+              backgroundColor: "#000",
+            };
+          } else {
+            const xOrigin = computeXoriginAnimation(
+              { current: initialIndex },
+              i,
+              state.images,
+              viewport,
+              true,
+              0
+            );
+            const scaleFactor = computeScaleFactor(initialIndex, i);
+
+            // This 'imageMargin' variable is directly link to the margin applied
+            // to an image:
+            // marginLeft: "2px",
+            // marginRight: "2px",
+            const imageMargin = 4;
+
+            let [screenConstrainedWidth, screenConstrainedHeight] =
+              screenConstrainedImageSize(
+                state.images[pages[i]],
+                viewport,
+                initialIndex,
+                i
+              ).map((x) => x * scaleFactor + imageMargin);
+            return {
+              to: {
+                x: xOrigin,
+                scale: scaleFactor,
+                display: "block",
+                backgroundColor: "#000",
+                scaledWidth: screenConstrainedWidth,
+                scaledHeight: screenConstrainedHeight,
+              },
+            };
+          }
+        });
+      }
     }
-  }, [state]);
+  }, [state, api]);
 
   // Trigger a viewport update if the size of the window change
   React.useEffect(() => {
