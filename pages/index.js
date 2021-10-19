@@ -14,12 +14,47 @@ const pages = [
   "https://lelscans.net/mangas/one-piece/1028/06.png",
 ];
 
-const initialIndex = 3;
+const initialIndex = 0;
 let currentImageIndex = initialIndex;
 
 const isNextToCurrentImage = (currentIndex, i) => {
   const neighbourhood = 3;
   return currentIndex - neighbourhood <= i && i <= currentIndex + neighbourhood;
+};
+
+const computeDarknessValue = (currentIndex, i) => {
+  const dist = Math.abs(currentIndex - i);
+  let darknessValue = 0;
+  if (dist === 0) {
+    darknessValue = 0;
+  } else {
+    darknessValue = 0.7;
+  }
+  return darknessValue;
+};
+
+const computeDarkness = (currentIndex, i) => {
+  const darknessValue = computeDarknessValue(currentIndex, i);
+  return `rgba(0, 0, 0, ${darknessValue})`;
+};
+
+const computeDarknessAnimation = (
+  currentIndex,
+  i,
+  isMxPositive,
+  animationPourcentage
+) => {
+  const darknessValueOrigin = computeDarknessValue(currentIndex, i);
+  let darknessValueTarget = 1;
+  if (isMxPositive) {
+    darknessValueTarget = computeDarknessValue(currentIndex, i + 1);
+  } else {
+    darknessValueTarget = computeDarknessValue(currentIndex, i - 1);
+  }
+  const darknessValueEffective =
+    (1 - animationPourcentage) * darknessValueOrigin +
+    animationPourcentage * darknessValueTarget;
+  return `rgba(0, 0, 0, ${darknessValueEffective})`;
 };
 
 const computeScaleFactor = (currentIndex, i) => {
@@ -259,6 +294,15 @@ function Viewpager(props) {
               return x * scale + imageMargin;
             });
 
+            const darknessOrigin = computeDarkness(currentImageIndex, i);
+            const darknessAnimation = computeDarknessAnimation(
+              currentImageIndex,
+              i,
+              isMxPositive,
+              animationPourcentage
+            );
+            const darkness = active ? darknessAnimation : darknessOrigin;
+
             return {
               x,
               scale,
@@ -266,6 +310,7 @@ function Viewpager(props) {
               backgroundColor: interpolateBackgroundColor,
               scaledWidth,
               scaledHeight,
+              darkness,
             };
           }
         });
@@ -318,6 +363,7 @@ function Viewpager(props) {
             ].map((x) => {
               return x * scale + 4;
             });
+            const darkness = computeDarkness(currentImageIndex, i);
             return {
               to: {
                 x: xOrigin,
@@ -326,6 +372,7 @@ function Viewpager(props) {
                 backgroundColor: "#000",
                 scaledWidth,
                 scaledHeight,
+                darkness,
               },
               config: { duration: slideDuration },
             };
@@ -359,7 +406,15 @@ function Viewpager(props) {
     <div className="wrapper">
       {springProps.map(
         (
-          { x, display, scale, backgroundColor, scaledWidth, scaledHeight },
+          {
+            x,
+            display,
+            scale,
+            backgroundColor,
+            scaledWidth,
+            scaledHeight,
+            darkness,
+          },
           i
         ) => {
           let [screenConstrainedWidth, screenConstrainedHeight] =
@@ -406,17 +461,15 @@ function Viewpager(props) {
                   }}
                 />
               </animated.div>
-              {/* <div
-                  style={{
-                    backgroundColor: "#000A",
-                    // width: adjustedWidth,
-                    // width: scaledWidth,
-                    width: "100%",
-                    height: "100%",
-                    position: "absolute",
-                    top: 0,
-                  }}
-                /> */}
+              <animated.div
+                style={{
+                  backgroundColor: darkness,
+                  width: "100%",
+                  height: "100%",
+                  position: "absolute",
+                  top: 0,
+                }}
+              />
             </animated.div>
           );
         }
@@ -424,8 +477,6 @@ function Viewpager(props) {
     </div>
   );
 }
-
-// let touchImages = 0;
 
 export default function App() {
   const [state, setState] = React.useState({
@@ -495,6 +546,7 @@ export default function App() {
       backgroundColor: "#000",
       scaledWidth: 0,
       scaledHeight: 0,
+      darkness: "rgba(0, 0, 0, 0)",
     };
   });
 
@@ -517,10 +569,12 @@ export default function App() {
             true,
             0
           );
+          const darkness = computeDarkness(initialIndex, i);
           return {
             x: xOrigin,
             display: "none",
             backgroundColor: "#000",
+            darkness,
           };
         } else {
           const xOrigin = computeXoriginAnimation(
@@ -545,6 +599,7 @@ export default function App() {
             screenConstrainedWidth,
             screenConstrainedHeight,
           ].map((x) => x * scaleFactor + imageMargin);
+          const darkness = computeDarkness(initialIndex, i);
           return {
             from: {
               x: xOrigin,
@@ -553,6 +608,7 @@ export default function App() {
               backgroundColor: "#000",
               scaledWidth,
               scaledHeight,
+              darkness,
             },
           };
         }
@@ -589,10 +645,12 @@ export default function App() {
               true,
               0
             );
+            const darkness = computeDarkness(currentImageIndex, i);
             return {
               x: xOrigin,
               display: "none",
               backgroundColor: "#000",
+              darkness,
             };
           } else {
             const xOrigin = computeXoriginAnimation(
@@ -617,6 +675,7 @@ export default function App() {
               screenConstrainedWidth,
               screenConstrainedHeight,
             ].map((x) => x * scaleFactor + imageMargin);
+            const darkness = computeDarkness(currentImageIndex, i);
             return {
               to: {
                 x: xOrigin,
@@ -625,6 +684,7 @@ export default function App() {
                 backgroundColor: "#000",
                 scaledWidth,
                 scaledHeight,
+                darkness,
               },
             };
           }
