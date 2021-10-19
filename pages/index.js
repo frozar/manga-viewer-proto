@@ -68,7 +68,7 @@ const computeXorigin = (index, i, images, viewport) => {
 };
 
 const computeXoriginAnimation = (
-  index,
+  currentIndex,
   i,
   images,
   viewport,
@@ -84,9 +84,9 @@ const computeXoriginAnimation = (
   // marginRight: "2px",
   const imageMargin = 4;
 
-  if (i - index.current <= -1) {
+  if (i - currentIndex <= -1) {
     const nextXOffsetOrigin = computeXoriginAnimation(
-      index,
+      currentIndex,
       i + 1,
       images,
       viewport,
@@ -97,11 +97,11 @@ const computeXoriginAnimation = (
     const [currentScreenConstrainedWidth] = screenConstrainedImageSize(
       images[pages[i]],
       viewport,
-      index.current,
+      currentIndex,
       i
     );
     const currentScaleAnimation = computeScaleAnimation(
-      index.current,
+      currentIndex,
       i,
       isMxPositive,
       animationPourcentage
@@ -109,24 +109,24 @@ const computeXoriginAnimation = (
     const currentScaledWidth =
       currentScreenConstrainedWidth * currentScaleAnimation + imageMargin;
     xOrigin = nextXOffsetOrigin - currentScaledWidth - xOriginMargin;
-  } else if (i - index.current === 0) {
+  } else if (i - currentIndex === 0) {
     const [screenConstrainedWidth] = screenConstrainedImageSize(
       images[pages[i]],
       viewport,
-      index.current,
+      currentIndex,
       i
     );
     const scaleAnimation = computeScaleAnimation(
-      index.current,
+      currentIndex,
       i,
       isMxPositive,
       animationPourcentage
     );
     const scaledWidth = screenConstrainedWidth * scaleAnimation + imageMargin;
     xOrigin = (viewport.width - scaledWidth) / 2;
-  } else if (1 <= i - index.current) {
+  } else if (1 <= i - currentIndex) {
     const previousXOffsetOrigin = computeXoriginAnimation(
-      index,
+      currentIndex,
       i - 1,
       images,
       viewport,
@@ -136,11 +136,11 @@ const computeXoriginAnimation = (
     const [previousScreenConstrainedWidth] = screenConstrainedImageSize(
       images[pages[i - 1]],
       viewport,
-      index.current,
+      currentIndex,
       i
     );
     const scaleAnimation = computeScaleAnimation(
-      index.current,
+      currentIndex,
       i - 1,
       isMxPositive,
       animationPourcentage
@@ -154,10 +154,10 @@ const computeXoriginAnimation = (
   return xOrigin;
 };
 
-// let index = initialIndex;
+let index = initialIndex;
 
 function Viewpager(props) {
-  const index = useRef(initialIndex);
+  // const index = useRef(initialIndex);
 
   const {
     state: { images, viewport, api },
@@ -187,15 +187,15 @@ function Viewpager(props) {
       const thresholdMx = Math.min(viewport.width / 10, 150);
       if (active && thresholdMx < Math.abs(mx)) {
         const xIncrement = 0 < xDir ? -1 : 1;
-        const toClamp = index.current + xIncrement;
+        const toClamp = index + xIncrement;
         const lower = 0;
         const upper = pages.length - 1;
-        index.current = clamp(toClamp, lower, upper);
+        index = clamp(toClamp, lower, upper);
         cancel();
       } else {
         api.start((i) => {
           // If image is not next the to current image, don't display
-          if (!isNextToCurrentImage(index.current, i)) {
+          if (!isNextToCurrentImage(index, i)) {
             return {
               display: "none",
               backgroundColor: "#000",
@@ -221,15 +221,10 @@ function Viewpager(props) {
             const x = xOrigin + xOffset;
 
             // Compute scale animation
-            const scaleOrigin = computeScaleAnimation(
-              index.current,
-              i,
-              true,
-              0
-            );
+            const scaleOrigin = computeScaleAnimation(index, i, true, 0);
 
             const scaleAnimation = computeScaleAnimation(
-              index.current,
+              index,
               i,
               isMxPositive,
               animationPourcentage
@@ -253,12 +248,7 @@ function Viewpager(props) {
               : "#000";
 
             let [screenConstrainedWidth, screenConstrainedHeight] =
-              screenConstrainedImageSize(
-                images[pages[i]],
-                viewport,
-                index.current,
-                i
-              );
+              screenConstrainedImageSize(images[pages[i]], viewport, index, i);
 
             // This 'imageMargin' variable is directly link to the margin applied
             // to an image:
@@ -298,16 +288,16 @@ function Viewpager(props) {
 
       const animation = (xIncrement) => {
         // const xIncrement = 1;
-        const toClamp = index.current + xIncrement;
+        const toClamp = index + xIncrement;
         const lower = 0;
         const upper = pages.length - 1;
-        index.current = clamp(toClamp, lower, upper);
+        index = clamp(toClamp, lower, upper);
 
         api.stop();
 
         api.start((i) => {
           // If image is not next the to current image, don't display
-          if (!isNextToCurrentImage(index.current, i)) {
+          if (!isNextToCurrentImage(index, i)) {
             return {
               display: "none",
               backgroundColor: "#000",
@@ -316,15 +306,10 @@ function Viewpager(props) {
             // Compute xOrigin
             const xOrigin = computeXorigin(index, i, images, viewport);
 
-            const scale = computeScaleFactor(index.current, i);
+            const scale = computeScaleFactor(index, i);
 
             let [screenConstrainedWidth, screenConstrainedHeight] =
-              screenConstrainedImageSize(
-                images[pages[i]],
-                viewport,
-                index.current,
-                i
-              );
+              screenConstrainedImageSize(images[pages[i]], viewport, index, i);
 
             const [scaledWidth, scaledHeight] = [
               screenConstrainedWidth,
@@ -377,12 +362,7 @@ function Viewpager(props) {
           i
         ) => {
           let [screenConstrainedWidth, screenConstrainedHeight] =
-            screenConstrainedImageSize(
-              images[pages[i]],
-              viewport,
-              index.current,
-              i
-            );
+            screenConstrainedImageSize(images[pages[i]], viewport, index, i);
 
           return (
             <animated.div
@@ -529,7 +509,7 @@ export default function App() {
       api.start((i) => {
         if (!isNextToCurrentImage(initialIndex, i)) {
           const xOrigin = computeXoriginAnimation(
-            { current: initialIndex },
+            initialIndex,
             i,
             state.images,
             state.viewport,
@@ -543,7 +523,7 @@ export default function App() {
           };
         } else {
           const xOrigin = computeXoriginAnimation(
-            { current: initialIndex },
+            initialIndex,
             i,
             state.images,
             state.viewport,
@@ -599,11 +579,10 @@ export default function App() {
       });
 
       if (state.api !== null) {
-        // TODO: use the current index instead of initialIndex
         api.start((i) => {
-          if (!isNextToCurrentImage(initialIndex, i)) {
+          if (!isNextToCurrentImage(index, i)) {
             const xOrigin = computeXoriginAnimation(
-              { current: initialIndex },
+              index,
               i,
               state.images,
               viewport,
@@ -617,14 +596,14 @@ export default function App() {
             };
           } else {
             const xOrigin = computeXoriginAnimation(
-              { current: initialIndex },
+              index,
               i,
               state.images,
               viewport,
               true,
               0
             );
-            const scaleFactor = computeScaleFactor(initialIndex, i);
+            const scaleFactor = computeScaleFactor(index, i);
 
             // This 'imageMargin' variable is directly link to the margin applied
             // to an image:
@@ -636,7 +615,7 @@ export default function App() {
               screenConstrainedImageSize(
                 state.images[pages[i]],
                 viewport,
-                initialIndex,
+                index,
                 i
               ).map((x) => x * scaleFactor + imageMargin);
             return {
