@@ -454,27 +454,6 @@ export default function App() {
 
   const [touchImages, setTouchImages] = React.useState({ value: false });
 
-  // Update the viewport
-  const handleResize = React.useCallback(() => {
-    if (
-      state.viewport.width !== window.innerWidth ||
-      state.viewport.height !== window.innerHeight
-    ) {
-      setState({
-        ...state,
-        viewport: { width: window.innerWidth, height: window.innerHeight },
-      });
-    }
-  }, [state]);
-
-  // Trigger a viewport update if the size of the window change
-  React.useEffect(() => {
-    window.addEventListener("resize", handleResize);
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, [handleResize]);
-
   // Initialise the viewport and the images
   React.useEffect(() => {
     let updateViewport = false;
@@ -498,16 +477,8 @@ export default function App() {
         const img = new Image();
         img.src = pageURL;
         img.loading = "eager";
-        // img.onerror = () => {
-        //   console.error("Error on", pageURL);
-        // };
         img.onload = () => {
-          // setTouchImages(touchImages + 1);
-          // touchImages += 1;
-          // setTouchImages(!touchImages);
           setTouchImages({ ...touchImages, value: !touchImages.value });
-          // console.log(`Image ${pageURL} loaded.`);
-          // console.log(`0 touchImages ${touchImages.value}`);
         };
         toLoad[pageURL] = img;
         updateImages = true;
@@ -612,6 +583,28 @@ export default function App() {
       });
     }
   }, [api, state, touchImages]);
+
+  // Update the viewport
+  const handleResize = React.useCallback(() => {
+    if (
+      state.viewport.width !== window.innerWidth ||
+      state.viewport.height !== window.innerHeight
+    ) {
+      const viewport = { width: window.innerWidth, height: window.innerHeight };
+      setState({
+        ...state,
+        viewport,
+      });
+    }
+  }, [state]);
+
+  // Trigger a viewport update if the size of the window change
+  React.useEffect(() => {
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [handleResize]);
 
   return (
     <>
