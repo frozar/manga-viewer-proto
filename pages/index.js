@@ -54,7 +54,7 @@ const computeScaleAnimation = (
   return scaleEffective;
 };
 
-const screenConstrainedImageSize = (image, viewport, currentIndex, i) => {
+const screenConstrainedImageSize = (image, viewport) => {
   const [imageWidth, imageHeight] = [image.width, image.height];
   const { width: viewportWidth, height: viewportHeight } = viewport;
 
@@ -78,7 +78,7 @@ const computeXoriginAnimation = (
 ) => {
   // Compute xOrigin
   let xOrigin = 0;
-  const xOriginMargin = 20;
+  const xOriginMargin = 15;
   // This 'imageMargin' variable is directly link to the margin applied
   // to an image:
   // marginLeft: "2px",
@@ -97,9 +97,7 @@ const computeXoriginAnimation = (
 
     const [currentScreenConstrainedWidth] = screenConstrainedImageSize(
       images[pages[i]],
-      viewport,
-      currentIndex,
-      i
+      viewport
     );
     const currentScaleAnimation = computeScaleAnimation(
       currentIndex,
@@ -113,9 +111,7 @@ const computeXoriginAnimation = (
   } else if (i - currentIndex === 0) {
     const [screenConstrainedWidth] = screenConstrainedImageSize(
       images[pages[i]],
-      viewport,
-      currentIndex,
-      i
+      viewport
     );
     const scaleAnimation = computeScaleAnimation(
       currentIndex,
@@ -136,9 +132,7 @@ const computeXoriginAnimation = (
     );
     const [previousScreenConstrainedWidth] = screenConstrainedImageSize(
       images[pages[i - 1]],
-      viewport,
-      currentIndex,
-      i
+      viewport
     );
     const scaleAnimation = computeScaleAnimation(
       currentIndex,
@@ -250,12 +244,7 @@ function Viewpager(props) {
               : "#000";
 
             let [screenConstrainedWidth, screenConstrainedHeight] =
-              screenConstrainedImageSize(
-                images[pages[i]],
-                viewport,
-                currentImageIndex,
-                i
-              );
+              screenConstrainedImageSize(images[pages[i]], viewport);
 
             // This 'imageMargin' variable is directly link to the margin applied
             // to an image:
@@ -321,12 +310,7 @@ function Viewpager(props) {
             const scale = computeScaleFactor(currentImageIndex, i);
 
             let [screenConstrainedWidth, screenConstrainedHeight] =
-              screenConstrainedImageSize(
-                images[pages[i]],
-                viewport,
-                currentImageIndex,
-                i
-              );
+              screenConstrainedImageSize(images[pages[i]], viewport);
 
             const [scaledWidth, scaledHeight] = [
               screenConstrainedWidth,
@@ -379,12 +363,7 @@ function Viewpager(props) {
           i
         ) => {
           let [screenConstrainedWidth, screenConstrainedHeight] =
-            screenConstrainedImageSize(
-              images[pages[i]],
-              viewport,
-              currentImageIndex,
-              i
-            );
+            screenConstrainedImageSize(images[pages[i]], viewport);
 
           return (
             <animated.div
@@ -560,21 +539,20 @@ export default function App() {
           // marginRight: "2px",
           const imageMargin = 4;
 
-          let [screenConstrainedWidth, screenConstrainedHeight] =
-            screenConstrainedImageSize(
-              state.images[pages[i]],
-              state.viewport,
-              initialIndex,
-              i
-            ).map((x) => x * scaleFactor + imageMargin);
+          const [screenConstrainedWidth, screenConstrainedHeight] =
+            screenConstrainedImageSize(state.images[pages[i]], state.viewport);
+          const [scaledWidth, scaledHeight] = [
+            screenConstrainedWidth,
+            screenConstrainedHeight,
+          ].map((x) => x * scaleFactor + imageMargin);
           return {
             from: {
               x: xOrigin,
               scale: scaleFactor,
               display: "block",
               backgroundColor: "#000",
-              scaledWidth: screenConstrainedWidth,
-              scaledHeight: screenConstrainedHeight,
+              scaledWidth,
+              scaledHeight,
             },
           };
         }
@@ -634,20 +612,19 @@ export default function App() {
             const imageMargin = 4;
 
             let [screenConstrainedWidth, screenConstrainedHeight] =
-              screenConstrainedImageSize(
-                state.images[pages[i]],
-                viewport,
-                currentImageIndex,
-                i
-              ).map((x) => x * scaleFactor + imageMargin);
+              screenConstrainedImageSize(state.images[pages[i]], viewport);
+            const [scaledWidth, scaledHeight] = [
+              screenConstrainedWidth,
+              screenConstrainedHeight,
+            ].map((x) => x * scaleFactor + imageMargin);
             return {
               to: {
                 x: xOrigin,
                 scale: scaleFactor,
                 display: "block",
                 backgroundColor: "#000",
-                scaledWidth: screenConstrainedWidth,
-                scaledHeight: screenConstrainedHeight,
+                scaledWidth,
+                scaledHeight,
               },
             };
           }
