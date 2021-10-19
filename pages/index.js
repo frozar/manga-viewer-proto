@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React from "react";
 import Head from "next/head";
 import { useSprings, animated } from "@react-spring/web";
 import { useDrag } from "@use-gesture/react";
@@ -15,6 +15,7 @@ const pages = [
 ];
 
 const initialIndex = 3;
+let currentImageIndex = initialIndex;
 
 const isNextToCurrentImage = (currentIndex, i) => {
   const neighbourhood = 3;
@@ -154,11 +155,7 @@ const computeXoriginAnimation = (
   return xOrigin;
 };
 
-let index = initialIndex;
-
 function Viewpager(props) {
-  // const index = useRef(initialIndex);
-
   const {
     state: { images, viewport, api },
     springProps,
@@ -187,15 +184,15 @@ function Viewpager(props) {
       const thresholdMx = Math.min(viewport.width / 10, 150);
       if (active && thresholdMx < Math.abs(mx)) {
         const xIncrement = 0 < xDir ? -1 : 1;
-        const toClamp = index + xIncrement;
+        const toClamp = currentImageIndex + xIncrement;
         const lower = 0;
         const upper = pages.length - 1;
-        index = clamp(toClamp, lower, upper);
+        currentImageIndex = clamp(toClamp, lower, upper);
         cancel();
       } else {
         api.start((i) => {
           // If image is not next the to current image, don't display
-          if (!isNextToCurrentImage(index, i)) {
+          if (!isNextToCurrentImage(currentImageIndex, i)) {
             return {
               display: "none",
               backgroundColor: "#000",
@@ -208,7 +205,7 @@ function Viewpager(props) {
 
             // Compute xOrigin
             const xOrigin = computeXoriginAnimation(
-              index,
+              currentImageIndex,
               i,
               images,
               viewport,
@@ -221,10 +218,15 @@ function Viewpager(props) {
             const x = xOrigin + xOffset;
 
             // Compute scale animation
-            const scaleOrigin = computeScaleAnimation(index, i, true, 0);
+            const scaleOrigin = computeScaleAnimation(
+              currentImageIndex,
+              i,
+              true,
+              0
+            );
 
             const scaleAnimation = computeScaleAnimation(
-              index,
+              currentImageIndex,
               i,
               isMxPositive,
               animationPourcentage
@@ -248,7 +250,12 @@ function Viewpager(props) {
               : "#000";
 
             let [screenConstrainedWidth, screenConstrainedHeight] =
-              screenConstrainedImageSize(images[pages[i]], viewport, index, i);
+              screenConstrainedImageSize(
+                images[pages[i]],
+                viewport,
+                currentImageIndex,
+                i
+              );
 
             // This 'imageMargin' variable is directly link to the margin applied
             // to an image:
@@ -288,28 +295,38 @@ function Viewpager(props) {
 
       const animation = (xIncrement) => {
         // const xIncrement = 1;
-        const toClamp = index + xIncrement;
+        const toClamp = currentImageIndex + xIncrement;
         const lower = 0;
         const upper = pages.length - 1;
-        index = clamp(toClamp, lower, upper);
+        currentImageIndex = clamp(toClamp, lower, upper);
 
         api.stop();
 
         api.start((i) => {
           // If image is not next the to current image, don't display
-          if (!isNextToCurrentImage(index, i)) {
+          if (!isNextToCurrentImage(currentImageIndex, i)) {
             return {
               display: "none",
               backgroundColor: "#000",
             };
           } else {
             // Compute xOrigin
-            const xOrigin = computeXorigin(index, i, images, viewport);
+            const xOrigin = computeXorigin(
+              currentImageIndex,
+              i,
+              images,
+              viewport
+            );
 
-            const scale = computeScaleFactor(index, i);
+            const scale = computeScaleFactor(currentImageIndex, i);
 
             let [screenConstrainedWidth, screenConstrainedHeight] =
-              screenConstrainedImageSize(images[pages[i]], viewport, index, i);
+              screenConstrainedImageSize(
+                images[pages[i]],
+                viewport,
+                currentImageIndex,
+                i
+              );
 
             const [scaledWidth, scaledHeight] = [
               screenConstrainedWidth,
@@ -362,7 +379,12 @@ function Viewpager(props) {
           i
         ) => {
           let [screenConstrainedWidth, screenConstrainedHeight] =
-            screenConstrainedImageSize(images[pages[i]], viewport, index, i);
+            screenConstrainedImageSize(
+              images[pages[i]],
+              viewport,
+              currentImageIndex,
+              i
+            );
 
           return (
             <animated.div
@@ -580,9 +602,9 @@ export default function App() {
 
       if (state.api !== null) {
         api.start((i) => {
-          if (!isNextToCurrentImage(index, i)) {
+          if (!isNextToCurrentImage(currentImageIndex, i)) {
             const xOrigin = computeXoriginAnimation(
-              index,
+              currentImageIndex,
               i,
               state.images,
               viewport,
@@ -596,14 +618,14 @@ export default function App() {
             };
           } else {
             const xOrigin = computeXoriginAnimation(
-              index,
+              currentImageIndex,
               i,
               state.images,
               viewport,
               true,
               0
             );
-            const scaleFactor = computeScaleFactor(index, i);
+            const scaleFactor = computeScaleFactor(currentImageIndex, i);
 
             // This 'imageMargin' variable is directly link to the margin applied
             // to an image:
@@ -615,7 +637,7 @@ export default function App() {
               screenConstrainedImageSize(
                 state.images[pages[i]],
                 viewport,
-                index,
+                currentImageIndex,
                 i
               ).map((x) => x * scaleFactor + imageMargin);
             return {
