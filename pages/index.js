@@ -8,6 +8,7 @@ const pages = [
   "https://lelscans.net/mangas/one-piece/1028/00.png",
   "https://lelscans.net/mangas/one-piece/1028/01.png",
   "https://lelscans.net/mangas/one-piece/1028/02.png",
+  // "https://static.fnac-static.com/multimedia/Images/FR/NR/6c/d8/81/8509548/1540-1/tsp20210301172909/Petit-Poilu-Madame-Minuscule.jpg",
   "https://lelscans.net/mangas/one-piece/1028/03.png",
   "https://lelscans.net/mangas/one-piece/1028/04.png",
   "https://lelscans.net/mangas/one-piece/1028/05.png",
@@ -18,7 +19,7 @@ const pages = [
 // const landscape = 0;
 // const portrait = 1;
 
-const initialIndex = 3;
+const initialIndex = 4;
 
 const isNextToCurrentImage = (currentIndex, i) => {
   const neighbourhood = 2;
@@ -38,6 +39,25 @@ const computeScaleFactor = (currentIndex, i) => {
   return scaleFactor;
 };
 
+const computeScaleEffective = (
+  currentIndex,
+  i,
+  isMxPositive,
+  animationPourcentage
+) => {
+  const scaleOrigin = computeScaleFactor(currentIndex, i);
+  let scaleTarget = 1;
+  if (isMxPositive) {
+    scaleTarget = computeScaleFactor(currentIndex, i + 1);
+  } else {
+    scaleTarget = computeScaleFactor(currentIndex, i - 1);
+  }
+  const scaleEffective =
+    (1 - animationPourcentage) * scaleOrigin +
+    animationPourcentage * scaleTarget;
+  return scaleEffective;
+};
+
 const adjustedImageSize = (image, viewport, currentIndex, i) => {
   const [imageWidth, imageHeight] = [image.width, image.height];
   const { width: viewportWidth, height: viewportHeight } = viewport;
@@ -46,51 +66,134 @@ const adjustedImageSize = (image, viewport, currentIndex, i) => {
   scaleFactor = Math.max(scaleFactor, imageHeight / viewportHeight);
   scaleFactor = Math.max(scaleFactor, imageWidth / viewportWidth);
   return [imageWidth / scaleFactor, imageHeight / scaleFactor];
-  // .map(
-  //   (x) => x * computeScaleFactor(currentIndex, i)
-  // );
 };
 
+// const computeXorigin = (index, i, images, viewport) => {
+//   // Compute xOrigin
+//   let xOrigin = 0;
+//   const marginSize = 20;
+//   if (i - index.current === -2) {
+//     const [centralAdjustedWidth] = adjustedImageSize(
+//       images[pages[i + 2]],
+//       viewport,
+//       index.current,
+//       i
+//     );
+//     const centralXOffsetOrigin = (viewport.width - centralAdjustedWidth) / 2;
+//     const [adjustedWidth] = adjustedImageSize(
+//       images[pages[i]],
+//       viewport,
+//       index.current,
+//       i
+//     );
+//     const afterXOrigin = centralXOffsetOrigin - adjustedWidth - marginSize;
+//     const [afterAdjustedWidth] = adjustedImageSize(
+//       images[pages[i + 1]],
+//       viewport,
+//       index.current,
+//       i
+//     );
+//     xOrigin = afterXOrigin - afterAdjustedWidth - marginSize;
+//   } else if (i - index.current === -1) {
+//     const [centralAdjustedWidth] = adjustedImageSize(
+//       images[pages[i + 1]],
+//       viewport,
+//       index.current,
+//       i
+//     );
+//     const centralXOffsetOrigin = (viewport.width - centralAdjustedWidth) / 2;
+//     const [adjustedWidth] = adjustedImageSize(
+//       images[pages[i]],
+//       viewport,
+//       index.current,
+//       i
+//     );
+//     xOrigin = centralXOffsetOrigin - adjustedWidth - marginSize;
+//   } else if (i - index.current === 0) {
+//     const [adjustedWidth] = adjustedImageSize(
+//       images[pages[i]],
+//       viewport,
+//       index.current,
+//       i
+//     );
+//     const xOffsetOrigin = (viewport.width - adjustedWidth) / 2;
+//     xOrigin = (i - index.current) * viewport.width + xOffsetOrigin;
+//   } else if (i - index.current === 1) {
+//     const [centralAdjustedWidth] = adjustedImageSize(
+//       images[pages[i - 1]],
+//       viewport,
+//       index.current,
+//       i
+//     );
+//     const centralXOffsetOrigin = (viewport.width - centralAdjustedWidth) / 2;
+//     xOrigin = centralXOffsetOrigin + centralAdjustedWidth + marginSize;
+//   } else if (i - index.current === 2) {
+//     const [centralAdjustedWidth] = adjustedImageSize(
+//       images[pages[i - 2]],
+//       viewport,
+//       index.current,
+//       i
+//     );
+//     const centralXOffsetOrigin = (viewport.width - centralAdjustedWidth) / 2;
+//     const beforeXOrigin =
+//       centralXOffsetOrigin + centralAdjustedWidth + marginSize;
+//     const [beforeAdjustedWidth] = adjustedImageSize(
+//       images[pages[i - 1]],
+//       viewport,
+//       index.current,
+//       i
+//     );
+//     xOrigin = beforeXOrigin + beforeAdjustedWidth + marginSize;
+//   }
+//   return xOrigin;
+// };
+
 const computeXorigin = (index, i, images, viewport) => {
+  return computeXoriginAnimation(index, i, images, viewport, true, 0);
+};
+
+const computeXoriginAnimation = (
+  index,
+  i,
+  images,
+  viewport,
+  isMxPositive,
+  animationPourcentage
+) => {
   // Compute xOrigin
   let xOrigin = 0;
-  if (i - index.current === -2) {
-    const [centralAdjustedWidth] = adjustedImageSize(
-      images[pages[i + 2]],
+  const xOriginMargin = 20;
+  // This 'imageMargin' variable is directly link to the margin applied
+  // to an image:
+  // marginLeft: "2px",
+  // marginRight: "2px",
+  const imageMargin = 4;
+
+  if (i - index.current <= -1) {
+    const nextXOffsetOrigin = computeXoriginAnimation(
+      index,
+      i + 1,
+      images,
       viewport,
-      index.current,
-      i
+      isMxPositive,
+      animationPourcentage
     );
-    const centralXOffsetOrigin = (viewport.width - centralAdjustedWidth) / 2;
-    const [adjustedWidth] = adjustedImageSize(
+
+    const [currentAdjustedWidth] = adjustedImageSize(
       images[pages[i]],
       viewport,
       index.current,
       i
     );
-    const afterXOrigin = centralXOffsetOrigin - adjustedWidth - 10;
-    const [afterAdjustedWidth] = adjustedImageSize(
-      images[pages[i + 1]],
-      viewport,
+    const currentScaleEffective = computeScaleEffective(
       index.current,
-      i
+      i,
+      isMxPositive,
+      animationPourcentage
     );
-    xOrigin = afterXOrigin - afterAdjustedWidth - 10;
-  } else if (i - index.current === -1) {
-    const [centralAdjustedWidth] = adjustedImageSize(
-      images[pages[i + 1]],
-      viewport,
-      index.current,
-      i
-    );
-    const centralXOffsetOrigin = (viewport.width - centralAdjustedWidth) / 2;
-    const [adjustedWidth] = adjustedImageSize(
-      images[pages[i]],
-      viewport,
-      index.current,
-      i
-    );
-    xOrigin = centralXOffsetOrigin - adjustedWidth - 10;
+    const currentScaledWidth =
+      currentAdjustedWidth * currentScaleEffective + imageMargin;
+    xOrigin = nextXOffsetOrigin - currentScaledWidth - xOriginMargin;
   } else if (i - index.current === 0) {
     const [adjustedWidth] = adjustedImageSize(
       images[pages[i]],
@@ -98,34 +201,41 @@ const computeXorigin = (index, i, images, viewport) => {
       index.current,
       i
     );
-    const xOffsetOrigin = (viewport.width - adjustedWidth) / 2;
-    xOrigin = (i - index.current) * viewport.width + xOffsetOrigin;
-  } else if (i - index.current === 1) {
-    const [centralAdjustedWidth] = adjustedImageSize(
+    const scaleEffective = computeScaleEffective(
+      index.current,
+      i,
+      isMxPositive,
+      animationPourcentage
+    );
+    const scaledWidth = adjustedWidth * scaleEffective + imageMargin;
+    xOrigin = (viewport.width - scaledWidth) / 2;
+  } else if (1 <= i - index.current) {
+    const previousXOffsetOrigin = computeXoriginAnimation(
+      index,
+      i - 1,
+      images,
+      viewport,
+      isMxPositive,
+      animationPourcentage
+    );
+    const [previousAdjustedWidth] = adjustedImageSize(
       images[pages[i - 1]],
       viewport,
       index.current,
       i
     );
-    const centralXOffsetOrigin = (viewport.width - centralAdjustedWidth) / 2;
-    xOrigin = centralXOffsetOrigin + centralAdjustedWidth + 10;
-  } else if (i - index.current === 2) {
-    const [centralAdjustedWidth] = adjustedImageSize(
-      images[pages[i - 2]],
-      viewport,
+    const scaleEffective = computeScaleEffective(
       index.current,
-      i
+      i - 1,
+      isMxPositive,
+      animationPourcentage
     );
-    const centralXOffsetOrigin = (viewport.width - centralAdjustedWidth) / 2;
-    const beforeXOrigin = centralXOffsetOrigin + centralAdjustedWidth + 10;
-    const [beforeAdjustedWidth] = adjustedImageSize(
-      images[pages[i - 1]],
-      viewport,
-      index.current,
-      i
-    );
-    xOrigin = beforeXOrigin + beforeAdjustedWidth + 10;
+    const previousScaledWidth =
+      previousAdjustedWidth * scaleEffective + imageMargin;
+
+    xOrigin = previousXOffsetOrigin + previousScaledWidth + xOriginMargin;
   }
+
   return xOrigin;
 };
 
@@ -139,7 +249,12 @@ function Viewpager(props) {
   } = props;
 
   const bind = useDrag(
-    ({ active, movement: [mx], direction: [xDir], cancel, tap }) => {
+    ({
+      active,
+      movement: [mx],
+      direction: [xDir],
+      cancel, //, tap
+    }) => {
       // If the move in x direction is above a certain threshold,
       // update image to show
 
@@ -152,7 +267,7 @@ function Viewpager(props) {
       // }
 
       // console.log("xDir", xDir);
-      console.log("mx", mx);
+      // console.log("mx", mx);
       const thresholdMx = Math.min(viewport.width / 10, 150);
       if (active && thresholdMx < Math.abs(mx)) {
         const xIncrement = 0 < xDir ? -1 : 1;
@@ -160,10 +275,11 @@ function Viewpager(props) {
         const lower = 0;
         const upper = pages.length - 1;
         index.current = clamp(toClamp, lower, upper);
-        console.log("index.current", index.current);
         cancel();
       } else {
         api.start((i) => {
+          // console.log("index.current", index.current);
+          // console.log("active", active);
           // If image is not next the to current image, don't display
           if (!isNextToCurrentImage(index.current, i)) {
             return {
@@ -171,37 +287,39 @@ function Viewpager(props) {
               backgroundColor: "#000",
             };
           } else {
+            const animationPourcentage = active
+              ? Math.abs(mx) / thresholdMx
+              : 0;
+            const isMxPositive = 0 < mx;
+
             // Compute xOrigin
-            const xOrigin = computeXorigin(index, i, images, viewport);
+            const xOrigin = computeXoriginAnimation(
+              index,
+              i,
+              images,
+              viewport,
+              isMxPositive,
+              animationPourcentage
+            );
 
             // Compute x animation
-            const xOffset = active ? mx * 2 : 0;
+            // const xOffset = active ? mx * 2 : 0;
+            const xOffset = active ? mx : 0;
             const x = xOrigin + xOffset;
 
             // Compute scale animation
-            const animationPourcentage = Math.abs(mx) / thresholdMx;
-            // const scaleOrigin = 1;
             const scaleOrigin = computeScaleFactor(index.current, i);
-            let scaleTarget = 1;
-            if (0 < mx) {
-              scaleTarget = computeScaleFactor(index.current, i + 1);
-            } else {
-              scaleTarget = computeScaleFactor(index.current, i - 1);
-            }
-            // const scaleEffect = -animationPourcentage * 0.05;
-            // const scale = active ? scaleOrigin + scaleEffect : scaleOrigin;
-            const scaleEffective =
-              (1 - animationPourcentage) * scaleOrigin +
-              animationPourcentage * scaleTarget;
-            if (i === index.current) {
-              console.log("scaleOrigin", scaleOrigin);
-              console.log("scaleTarget", scaleTarget);
-              console.log("scaleEffective", scaleEffective);
-            }
+
+            const scaleEffective = computeScaleEffective(
+              index.current,
+              i,
+              isMxPositive,
+              animationPourcentage
+            );
             const scale = active ? scaleEffective : scaleOrigin;
 
             // Compute color animation
-            const nbColor = 5;
+            const nbColor = 8;
             const interpolationQuantum = 1 / nbColor;
             const colorIndex = Math.ceil(
               animationPourcentage / interpolationQuantum
@@ -215,11 +333,34 @@ function Viewpager(props) {
             const interpolateBackgroundColor = active
               ? `#${colorStr}${colorStr}${colorStr}`
               : "#000";
+
+            let [adjustedWidth, adjustedHeight] = adjustedImageSize(
+              images[pages[i]],
+              viewport,
+              index.current,
+              i
+            );
+
+            // This 'imageMargin' variable is directly link to the margin applied
+            // to an image:
+            // marginLeft: "2px",
+            // marginRight: "2px",
+            const imageMargin = 4;
+
+            const [scaledWidth, scaledHeight] = [
+              adjustedWidth,
+              adjustedHeight,
+            ].map((x) => {
+              return x * scale + imageMargin;
+            });
+
             return {
               x,
               scale,
               display: "block",
               backgroundColor: interpolateBackgroundColor,
+              scaledWidth,
+              scaledHeight,
             };
           }
         });
@@ -234,7 +375,7 @@ function Viewpager(props) {
   const handleKeyDown = React.useCallback(
     (evt) => {
       const slideDuration = 400;
-      const resetDuration = 200;
+      // const resetDuration = 200;
       // const slideDuration = 10000;
       // const resetDuration = 1000;
 
@@ -258,42 +399,85 @@ function Viewpager(props) {
             // Compute xOrigin
             const xOrigin = computeXorigin(index, i, images, viewport);
 
-            const transitionScale = 0.95;
-            const interpolateBackgroundColor = "#555";
+            const scale = computeScaleFactor(index.current, i);
+
+            let [adjustedWidth, adjustedHeight] = adjustedImageSize(
+              images[pages[i]],
+              viewport,
+              index.current,
+              i
+            );
+
+            const [scaledWidth, scaledHeight] = [
+              adjustedWidth,
+              adjustedHeight,
+            ].map((x) => {
+              return x * scale + 4;
+            });
             return {
               to: {
                 x: xOrigin,
-                scale: transitionScale,
+                scale,
                 display: "block",
-                backgroundColor: interpolateBackgroundColor,
+                backgroundColor: "#000",
+                scaledWidth,
+                scaledHeight,
               },
               config: { duration: slideDuration },
             };
           }
         });
 
-        api.start((i) => {
-          if (!isNextToCurrentImage(index.current, i)) {
-            return {
-              display: "none",
-              backgroundColor: "#000",
-            };
-          } else {
-            // Compute xOrigin
-            const xOrigin = computeXorigin(index, i, images, viewport);
+        // api.start((i) => {
+        //   if (!isNextToCurrentImage(index.current, i)) {
+        //     return {
+        //       display: "none",
+        //       backgroundColor: "#000",
+        //     };
+        //   } else {
+        //     // Compute xOrigin
+        //     const xOrigin = computeXorigin(index, i, images, viewport);
 
-            return {
-              to: {
-                x: xOrigin,
-                scale: 1,
-                display: "block",
-                backgroundColor: "#000",
-              },
-              delay: slideDuration,
-              config: { duration: resetDuration },
-            };
-          }
-        });
+        //     // const scaleEffective = computeScaleEffective(
+        //     //   index.current,
+        //     //   i,
+        //     //   true,
+        //     //   1
+        //     // );
+        //     const scaleEffective = computeScaleFactor(index.current, i);
+        //     const scale = scaleEffective;
+        //     console.log("i", i);
+        //     console.log("index.current", index.current);
+        //     console.log("scale", scale);
+
+        //     let [adjustedWidth, adjustedHeight] = adjustedImageSize(
+        //       images[pages[i]],
+        //       viewport,
+        //       index.current,
+        //       i
+        //     );
+
+        //     const [scaledWidth, scaledHeight] = [
+        //       adjustedWidth,
+        //       adjustedHeight,
+        //     ].map((x) => {
+        //       // return x * computeScaleFactor(index.current, i) + 4;
+        //       return x * scale + 4;
+        //     });
+        //     return {
+        //       to: {
+        //         x: xOrigin,
+        //         scale: scale,
+        //         display: "block",
+        //         backgroundColor: "#000",
+        //         scaledWidth,
+        //         scaledHeight,
+        //       },
+        //       delay: slideDuration,
+        //       config: { duration: resetDuration },
+        //     };
+        //   }
+        // });
       };
 
       if (evt.key === "ArrowLeft") {
@@ -325,63 +509,79 @@ function Viewpager(props) {
   } else {
     return (
       <div className="wrapper">
-        {springProps.map(({ x, display, scale, backgroundColor }, i) => {
-          let [adjustedWidth, adjustedHeight] = adjustedImageSize(
-            images[pages[i]],
-            viewport,
-            index.current,
+        {springProps.map(
+          (
+            { x, display, scale, backgroundColor, scaledWidth, scaledHeight },
             i
-          );
+          ) => {
+            let [adjustedWidth, adjustedHeight] = adjustedImageSize(
+              images[pages[i]],
+              viewport,
+              index.current,
+              i
+            );
 
-          // const scaleOrigin = ;
+            // if (i - index.current === -1) {
+            //   console.log("main   -1 adjustedWidth", adjustedWidth);
+            //   console.log("main   -1 scaledWidth  ", scaledWidth);
+            // }
 
-          // if (i === index.current) {
-          //   console.log(
-          //     "imageHeight / viewportHeight",
-          //     images[pages[i]].height / viewport.height
-          //   );
-          //   console.log(
-          //     "imageWidth / viewportWidtht",
-          //     images[pages[i]].width / viewport.width
-          //   );
-          //   if (typeof window !== "undefined") {
-          //     console.log("window.innerWidth", window.innerWidth);
-          //     console.log("window.innerHeight", window.innerHeight);
-          //   }
-          // }
-          // console.log("pages[i]", pages[i]);
-          // console.log("condition", images[pages[i]] !== undefined);
-          // console.log(
-          //   "width",
-          //   images[pages[i]] ? images[pages[i]].width : "not yet"
-          // );
-          return (
-            <animated.div
-              className="page"
-              {...bind()}
-              key={i}
-              style={{
-                display,
-                x,
-                // width:
-                //   images[pages[i]] !== undefined
-                //     ? `${getWidth(images[pages[i]])}px`
-                //     : "80%",
-              }}
-            >
+            // const [scaledWidth, scaledHeight] = [
+            //   adjustedWidth,
+            //   adjustedHeight,
+            // ].map((x) => {
+            //   console.log("IN MAP, i", i);
+            //   return x * computeScaleFactor(index.current, i) + 4;
+            // });
+
+            // const scaleOrigin = ;
+
+            // if (i === index.current) {
+            //   console.log(
+            //     "imageHeight / viewportHeight",
+            //     images[pages[i]].height / viewport.height
+            //   );
+            //   console.log(
+            //     "imageWidth / viewportWidtht",
+            //     images[pages[i]].width / viewport.width
+            //   );
+            //   if (typeof window !== "undefined") {
+            //     console.log("window.innerWidth", window.innerWidth);
+            //     console.log("window.innerHeight", window.innerHeight);
+            //   }
+            // }
+            // console.log("pages[i]", pages[i]);
+            // console.log("condition", images[pages[i]] !== undefined);
+            // console.log(
+            //   "width",
+            //   images[pages[i]] ? images[pages[i]].width : "not yet"
+            // );
+            return (
               <animated.div
+                className="page"
+                {...bind()}
+                key={i}
                 style={{
-                  scale,
-                  // backgroundImage: `url(${pages[i]})`,
+                  display,
+                  x,
                   backgroundColor,
-                  // marginLeft: "10px",
-                  // marginRight: "10px",
-                  display: "flex",
-                  alignItems: "center",
-                  transformOrigin: "bottom center",
+                  zIndex: pages.length - i,
                 }}
               >
-                {/* <ImageNext
+                <animated.div
+                  style={{
+                    scale,
+                    // backgroundColor,
+                    // marginLeft: "10px",
+                    // marginRight: "10px",
+                    display: "flex",
+                    alignItems: "center",
+                    // transformOrigin: "bottom center",
+                    transformOrigin: "left",
+                    width: scaledWidth,
+                  }}
+                >
+                  {/* <ImageNext
                 src={`${pages[i]}`}
                 alt="manga"
                 unoptimized={true}
@@ -395,43 +595,45 @@ function Viewpager(props) {
                   e.preventDefault();
                 }}
               /> */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`${pages[i]}`}
-                  alt="manga"
-                  width={adjustedWidth}
-                  height={adjustedHeight}
-                  // unoptimized={true}
-                  // layout="fill"
-                  // objectFit="contain"
-                  style={{
-                    position: "relative",
-                    // width: "100%",
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`${pages[i]}`}
+                    alt="manga"
+                    width={adjustedWidth}
+                    height={adjustedHeight}
+                    // unoptimized={true}
+                    // layout="fill"
+                    // objectFit="contain"
+                    style={{
+                      position: "relative",
+                      // width: "100%",
 
-                    // width:
-                    //   images[pages[i]] !== undefined
-                    //     ? `${getWidth(images[pages[i]])}px`
-                    //     : "100%",
-                    // height: "100%",
-                    // maxWidth: "100%",
-                    // height: viewport.width < viewport.height ? "100%" : "unset",
-                    // width: viewport.width < viewport.height ? "unset" : "100%",
+                      // width:
+                      //   images[pages[i]] !== undefined
+                      //     ? `${getWidth(images[pages[i]])}px`
+                      //     : "100%",
+                      // height: "100%",
+                      // maxWidth: "100%",
+                      // height: viewport.width < viewport.height ? "100%" : "unset",
+                      // width: viewport.width < viewport.height ? "unset" : "100%",
 
-                    marginLeft: "2px",
-                    marginRight: "2px",
-                    // overflow: "hidden",
-                  }}
-                  onDragStart={(e) => {
-                    e.preventDefault();
-                  }}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                  }}
-                />
+                      marginLeft: "2px",
+                      marginRight: "2px",
+                      // overflow: "hidden",
+                      // opacity: 0.2,
+                    }}
+                    onDragStart={(e) => {
+                      e.preventDefault();
+                    }}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                    }}
+                  />
+                </animated.div>
               </animated.div>
-            </animated.div>
-          );
-        })}
+            );
+          }
+        )}
       </div>
     );
   }
@@ -514,6 +716,8 @@ function ViewpagerLoader() {
       scale: 1,
       display: "block",
       backgroundColor: "#000",
+      scaledWidth: null,
+      scaledHeight: null,
     };
   });
 
@@ -535,19 +739,42 @@ function ViewpagerLoader() {
             backgroundColor: "#000",
           };
         } else {
-          const xOrigin = computeXorigin(
+          // const xOrigin = computeXorigin(
+          //   { current: initialIndex },
+          //   i,
+          //   state.images,
+          //   state.viewport
+          // );
+          const xOrigin = computeXoriginAnimation(
             { current: initialIndex },
             i,
             state.images,
-            state.viewport
+            state.viewport,
+            true,
+            0
           );
           const scaleFactor = computeScaleFactor(initialIndex, i);
+
+          // This 'imageMargin' variable is directly link to the margin applied
+          // to an image:
+          // marginLeft: "2px",
+          // marginRight: "2px",
+          const imageMargin = 4;
+
+          let [scaledWidth, scaledHeight] = adjustedImageSize(
+            state.images[pages[i]],
+            state.viewport,
+            initialIndex,
+            i
+          ).map((x) => x * scaleFactor + imageMargin);
           return {
             from: {
               x: xOrigin,
               scale: scaleFactor,
               display: "block",
               backgroundColor: "#000",
+              scaledWidth,
+              scaledHeight,
             },
             // immediat: true,
           };
