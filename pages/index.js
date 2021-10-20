@@ -725,6 +725,15 @@ export default function App() {
     typeof navigator !== "undefined" &&
     /iPad|iPhone|iPod/.test(navigator.userAgent);
 
+  const loadingPourcentage = Math.ceil(
+    (pages.filter(
+      (pageURL) =>
+        state.images[pageURL] !== undefined && state.images[pageURL].complete
+    ).length /
+      pages.length) *
+      100
+  );
+
   return (
     <>
       <Head>
@@ -747,7 +756,7 @@ export default function App() {
         {state.ready ? (
           <Viewpager state={state} springProps={springProps} />
         ) : (
-          "A moment please"
+          `A moment please ${loadingPourcentage}%`
         )}
       </div>
       {state.ready && !iOS && <ControlBar />}
