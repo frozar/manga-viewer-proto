@@ -34,7 +34,7 @@ const theme = createTheme({
 });
 
 export default function ControlBar() {
-  const drawerShowDuration = 500;
+  const drawerShowDuration = 1000;
   const timeout_id = React.useRef(null);
   const [showDrawer, setShowDrawer] = React.useState({ value: false });
 
@@ -74,7 +74,11 @@ export default function ControlBar() {
             ) : (
               <FullscreenIcon
                 onClick={() => {
-                  document.documentElement.requestFullscreen();
+                  if (
+                    document.documentElement.requestFullscreen !== undefined
+                  ) {
+                    document.documentElement.requestFullscreen();
+                  }
                 }}
               />
             )}

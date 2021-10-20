@@ -700,16 +700,48 @@ export default function App() {
   // Trigger a viewport update if the size of the window change
   React.useEffect(() => {
     window.addEventListener("resize", handleResize);
+    window.addEventListener("orientationchange", handleResize);
+    if (
+      screen !== undefined &&
+      screen.orientation !== undefined &&
+      screen.orientation.addEventListener !== undefined
+    ) {
+      screen.orientation.addEventListener("change", handleResize);
+    }
     return () => {
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleResize);
+      if (
+        screen !== undefined &&
+        screen.orientation !== undefined &&
+        screen.orientation.removeEventListener !== undefined
+      ) {
+        screen.orientation.removeEventListener("change", handleResize);
+      }
     };
   }, [handleResize]);
+
+  const iOS =
+    typeof navigator !== "undefined" &&
+    /iPad|iPhone|iPod/.test(navigator.userAgent);
 
   return (
     <>
       <Head>
         {/* eslint-disable-next-line @next/next/no-css-tags */}
         <link rel="stylesheet" href="./styles.module.css" media="all" />
+        {/* Documentation link:
+            http://www.onlywebpro.com/2015/07/19/optimizing-full-screen-mobile-web-app-for-ios/ 
+        */}
+        {/* Set the viewport */}
+        <meta
+          name="viewport"
+          content="width = device-width, initial-scale = 1.0, minimum-scale = 1, maximum-scale = 1, user-scalable = no"
+        ></meta>
+        {/* Set your app name */}
+        <meta name="apple-mobile-web-app-title" content="onlyWebPro"></meta>
+        {/* Set your app to full screen mode */}
+        <meta name="apple-mobile-web-app-capable" content="yes"></meta>
       </Head>
       <div className="flex fill center">
         {state.ready ? (
@@ -718,7 +750,7 @@ export default function App() {
           "A moment please"
         )}
       </div>
-      {state.ready && <ControlBar />}
+      {state.ready && !iOS && <ControlBar />}
     </>
   );
 }
