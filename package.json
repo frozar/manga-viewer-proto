@@ -15,6 +15,7 @@
   "dependencies": {
     "@emotion/react": "^11.5.0",
     "@emotion/styled": "^11.3.0",
+    "@mui/icons-material": "^5.0.4",
     "@mui/material": "^5.0.4",
     "@react-spring/web": "^9.3.0",
     "@use-gesture/react": "^10.1.0",

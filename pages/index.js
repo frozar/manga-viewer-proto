@@ -4,6 +4,8 @@ import { useSprings, animated } from "@react-spring/web";
 import { useDrag } from "@use-gesture/react";
 import clamp from "lodash.clamp";
 
+import ControlBar from "../components/ControlBar";
+
 const pages = [
   "https://lelscans.net/mangas/one-piece/1028/00.png",
   "https://lelscans.net/mangas/one-piece/1028/01.png",
@@ -478,39 +480,6 @@ function Viewpager(props) {
   );
 }
 
-function ControlBar() {
-  const timeout_id = React.useRef(null);
-  const [showDrawer, setShowDrawer] = React.useState({ value: false });
-
-  const handleMouseMove = React.useCallback(() => {
-    // console.log("In mouse move");
-
-    if (!showDrawer.value) {
-      setShowDrawer({ value: true });
-      console.log("show drawer : TRUE");
-    }
-
-    if (timeout_id.current !== null) {
-      clearTimeout(timeout_id.current);
-    }
-    timeout_id.current = setTimeout(() => {
-      setShowDrawer({ value: false });
-      timeout_id.current = null;
-      console.log("show drawer : FALSE");
-    }, 1000);
-  }, [showDrawer]);
-
-  // Trigger a viewport update if the size of the window change
-  React.useEffect(() => {
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-    };
-  }, [handleMouseMove]);
-
-  return null;
-}
-
 export default function App() {
   const [state, setState] = React.useState({
     viewport: { width: 1280, height: 960 },
@@ -746,7 +715,7 @@ export default function App() {
         {state.ready ? (
           <Viewpager state={state} springProps={springProps} />
         ) : (
-          "Wait a moment please."
+          "A moment please"
         )}
       </div>
       {state.ready && <ControlBar />}
