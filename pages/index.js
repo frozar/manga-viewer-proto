@@ -478,6 +478,39 @@ function Viewpager(props) {
   );
 }
 
+function ControlBar() {
+  const timeout_id = React.useRef(null);
+  const [showDrawer, setShowDrawer] = React.useState({ value: false });
+
+  const handleMouseMove = React.useCallback(() => {
+    // console.log("In mouse move");
+
+    if (!showDrawer.value) {
+      setShowDrawer({ value: true });
+      console.log("show drawer : TRUE");
+    }
+
+    if (timeout_id.current !== null) {
+      clearTimeout(timeout_id.current);
+    }
+    timeout_id.current = setTimeout(() => {
+      setShowDrawer({ value: false });
+      timeout_id.current = null;
+      console.log("show drawer : FALSE");
+    }, 1000);
+  }, [showDrawer]);
+
+  // Trigger a viewport update if the size of the window change
+  React.useEffect(() => {
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, [handleMouseMove]);
+
+  return null;
+}
+
 export default function App() {
   const [state, setState] = React.useState({
     viewport: { width: 1280, height: 960 },
@@ -619,6 +652,8 @@ export default function App() {
         api: api,
         ready: true,
       });
+      // console.log("Hidden address bar");
+      // window.scrollTo(0, 1);
     }
   }, [api, state, touchImages]);
 
@@ -714,6 +749,7 @@ export default function App() {
           "Wait a moment please."
         )}
       </div>
+      {state.ready && <ControlBar />}
     </>
   );
 }
