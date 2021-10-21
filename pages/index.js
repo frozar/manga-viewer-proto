@@ -192,28 +192,63 @@ function Viewpager(props) {
     springProps,
   } = props;
 
+  const isDragging = React.useRef(true);
+  const draggingModeSet = React.useRef(false);
+  const draggingTimeoutId = React.useRef(null);
+  const initialTimeStamp = React.useRef(0);
+
   const bind = useDrag(
     ({
       active,
       movement: [mx],
       direction: [xDir],
-      cancel, //, tap
+      cancel,
+      timeStamp,
+      currentTarget,
     }) => {
-      // Fullscreen toggling
-      // if (tap) {
-      //   if (!document.fullscreenElement) {
-      //     document.documentElement.requestFullscreen();
-      //   } else {
-      //     document.exitFullscreen();
-      //   }
-      // }
+      // Detect if user is dragging or not
+      // TODO: if user is not dragging, trigger a zoom
+
+      const pagesURL = currentTarget.children[0].children[0].src;
+      const indexOfDraggingImage = pages.indexOf(pagesURL);
+      if (indexOfDraggingImage !== currentImageIndex) {
+        isDragging.current = true;
+        draggingModeSet.current = true;
+
+        if (!active) {
+          draggingTimeoutId.current = null;
+          initialTimeStamp.current = 0;
+          isDragging.current = true;
+          draggingModeSet.current = false;
+        }
+      } else {
+        if (initialTimeStamp.current === 0) {
+          initialTimeStamp.current = timeStamp;
+          isDragging.current = true;
+          draggingModeSet.current = false;
+        } else {
+          const elapseTime = timeStamp - initialTimeStamp.current;
+          // console.log("elapseTime", elapseTime, "Math.abs(mx)", Math.abs(mx));
+          if (200 < elapseTime && !draggingModeSet.current) {
+            if (Math.abs(mx) < 10) {
+              isDragging.current = false;
+            }
+            draggingModeSet.current = true;
+          }
+        }
+        if (!active) {
+          draggingTimeoutId.current = null;
+          initialTimeStamp.current = 0;
+          isDragging.current = true;
+          draggingModeSet.current = false;
+        }
+      }
 
       // If the move in x direction is above a certain threshold,
       // update image to show
-      // console.log("xDir", xDir);
-      // console.log("mx", mx);
-      const thresholdMx = Math.min(viewport.width / 10, 150);
-      if (active && thresholdMx < Math.abs(mx)) {
+      const isDragActive = active && isDragging.current;
+      const thresholdMx = Math.min(viewport.width / 5, 150);
+      if (isDragActive && thresholdMx < Math.abs(mx)) {
         const xIncrement = 0 < xDir ? -1 : 1;
         const toClamp = currentImageIndex + xIncrement;
         const lower = 0;
@@ -229,7 +264,7 @@ function Viewpager(props) {
               backgroundColor: "#000",
             };
           } else {
-            const animationPourcentage = active
+            const animationPourcentage = isDragActive
               ? Math.abs(mx) / thresholdMx
               : 0;
             const isMxPositive = 0 < mx;
@@ -245,7 +280,7 @@ function Viewpager(props) {
             );
 
             // Compute x animation
-            const xOffset = active ? mx : 0;
+            const xOffset = isDragActive ? mx : 0;
             const x = xOrigin + xOffset;
 
             // Compute scale animation
@@ -262,7 +297,7 @@ function Viewpager(props) {
               isMxPositive,
               animationPourcentage
             );
-            const scale = active ? scaleAnimation : scaleOrigin;
+            const scale = isDragActive ? scaleAnimation : scaleOrigin;
 
             // Compute color animation
             const nbColor = 8;
@@ -276,7 +311,7 @@ function Viewpager(props) {
             } else {
               colorStr = `A`;
             }
-            const interpolateBackgroundColor = active
+            const interpolateBackgroundColor = isDragActive
               ? `#${colorStr}${colorStr}${colorStr}`
               : "#000";
 
@@ -303,7 +338,7 @@ function Viewpager(props) {
               isMxPositive,
               animationPourcentage
             );
-            const darkness = active ? darknessAnimation : darknessOrigin;
+            const darkness = isDragActive ? darknessAnimation : darknessOrigin;
 
             return {
               x,
