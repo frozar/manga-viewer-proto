@@ -18,7 +18,7 @@ const theme = createTheme({
     MuiPaper: {
       styleOverrides: {
         root: {
-          backgroundColor: "rgba(255,255,255, 0.5)",
+          backgroundColor: "rgba(128, 128, 128, 0.5)",
         },
       },
     },
@@ -33,7 +33,8 @@ const theme = createTheme({
   },
 });
 
-export default function ControlBar() {
+export default function ControlBar(props) {
+  const { isZoomActive } = props;
   const drawerShowDuration = 1000;
   const timeout_id = React.useRef(null);
   const [showDrawer, setShowDrawer] = React.useState({ value: false });
@@ -62,7 +63,11 @@ export default function ControlBar() {
 
   return (
     <ThemeProvider theme={theme}>
-      <Drawer anchor="bottom" open={showDrawer.value} hideBackdrop={true}>
+      <Drawer
+        anchor="bottom"
+        open={showDrawer.value && !isZoomActive}
+        hideBackdrop={true}
+      >
         <Grid container direction="row" justifyContent="center">
           <Grid item>
             {document.fullscreenElement ? (

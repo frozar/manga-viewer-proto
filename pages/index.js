@@ -20,8 +20,7 @@ const initialIndex = 4;
 let currentImageIndex = initialIndex;
 
 const isNextToCurrentImage = (currentIndex, i) => {
-  // const neighbourhood = 3;
-  const neighbourhood = 1;
+  const neighbourhood = 3;
   return currentIndex - neighbourhood <= i && i <= currentIndex + neighbourhood;
 };
 
@@ -145,7 +144,6 @@ const computeXoriginAnimation = (
     );
     const currentScaledWidth =
       currentScreenConstrainedWidth * currentScaleAnimation + imageMargin;
-    // const currentScaledWidth = currentScreenConstrainedWidth + imageMargin;
     xOrigin = nextXOffsetOrigin - currentScaledWidth - xOriginMargin;
   } else if (i - currentIndex === 0) {
     const [screenConstrainedWidth] = screenConstrainedImageSize(
@@ -181,7 +179,6 @@ const computeXoriginAnimation = (
     );
     const previousScaledWidth =
       previousScreenConstrainedWidth * scaleAnimation + imageMargin;
-    // const previousScaledWidth = previousScreenConstrainedWidth + imageMargin;
 
     xOrigin = previousXOffsetOrigin + previousScaledWidth + xOriginMargin;
   }
@@ -193,6 +190,8 @@ function Viewpager(props) {
   const {
     state: { images, viewport, api },
     springProps,
+    isZoomActive,
+    setIsZoomActive,
   } = props;
 
   const isDragging = React.useRef(true);
@@ -214,9 +213,7 @@ function Viewpager(props) {
       xy: [pointerX, pointerY],
     }) => {
       // Detect if user is dragging or not
-      // TODO: if user is not dragging, trigger a zoom
-
-      const pagesURL = currentTarget.children[0].children[0].src;
+      const pagesURL = currentTarget.children[0].children[0].children[0].src;
       const indexOfDraggingImage = pages.indexOf(pagesURL);
       if (indexOfDraggingImage !== currentImageIndex) {
         isDragging.current = true;
@@ -228,6 +225,7 @@ function Viewpager(props) {
           isDragging.current = true;
           draggingModeSet.current = false;
           isTimeThresholdPassed.current = false;
+          setIsZoomActive(false);
         }
       } else {
         if (initialTimeStamp.current === 0) {
@@ -256,15 +254,19 @@ function Viewpager(props) {
           isTimeThresholdPassed.current = false;
           xTransformOriginInit.current = null;
           yTransformOriginInit.current = null;
+          setIsZoomActive(false);
         }
       }
 
-      const isZoomActive =
+      const isZoomActiveFast =
         active && !isDragging.current && isTimeThresholdPassed.current;
+      if (isZoomActive !== isZoomActiveFast) {
+        setIsZoomActive(isZoomActiveFast);
+      }
 
       const isDragActive = active && isDragging.current;
       const thresholdMx = Math.min(viewport.width / 5, 150);
-      if (isZoomActive) {
+      if (isZoomActiveFast) {
         api.start((i) => {
           // If image is not next the to current image, don't display
           // if (!isNextToCurrentImage(currentImageIndex, i)) {
@@ -286,8 +288,10 @@ function Viewpager(props) {
               0
             );
 
-            const scale = currentImageIndex === i ? 1.8 : 1;
-            const display = currentImageIndex === i ? "block" : "none";
+            // const scale = currentImageIndex === i ? 1.75 : 1;
+            // const display = currentImageIndex === i ? "block" : "none";
+            const scale = 1.75;
+            const display = active ? "block" : "flex";
 
             // if (currentImageIndex === i) {
             //   // console.log("scale", scale);
@@ -398,7 +402,7 @@ function Viewpager(props) {
             const scale = isDragActive ? scaleAnimation : scaleOrigin;
 
             // Compute color animation
-            const nbColor = 8;
+            const nbColor = 4;
             const interpolationQuantum = 1 / nbColor;
             const colorIndex = Math.ceil(
               animationPourcentage / interpolationQuantum
@@ -441,7 +445,8 @@ function Viewpager(props) {
               x,
               y: 0,
               scale,
-              display: "block",
+              // display: "block",
+              display: "flex",
               backgroundColor: interpolateBackgroundColor,
               scaledWidth,
               scaledHeight,
@@ -505,7 +510,8 @@ function Viewpager(props) {
               to: {
                 x: xOrigin,
                 scale,
-                display: "block",
+                // display: "block",
+                display: "flex",
                 backgroundColor: "#000",
                 scaledWidth,
                 scaledHeight,
@@ -571,8 +577,7 @@ function Viewpager(props) {
                 y,
                 backgroundColor,
                 zIndex: pages.length - i,
-                scale,
-                transformOrigin: "left center",
+                alignItems: "center",
               }}
               onContextMenu={(e) => {
                 e.preventDefault();
@@ -580,50 +585,52 @@ function Viewpager(props) {
             >
               <animated.div
                 style={{
-                  // scale,
-                  // x: xTransform,
-                  // y: yTransform,
+                  scale,
+                  transformOrigin: "left center",
+                  width: scaledWidth,
+                  height: screenConstrainedHeight,
                   display: "flex",
                   alignItems: "center",
-                  // transformOrigin: "left center",
-                  // width: scaledWidth,
-                  width: screenConstrainedWidth + 4,
-                }}
-                onContextMenu={(e) => {
-                  e.preventDefault();
                 }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`${pages[i]}`}
-                  alt="manga"
-                  width={screenConstrainedWidth}
-                  height={screenConstrainedHeight}
+                <animated.div
                   style={{
-                    position: "relative",
-                    marginLeft: "2px",
-                    marginRight: "2px",
-                  }}
-                  onDragStart={(e) => {
-                    e.preventDefault();
+                    display: "flex",
+                    alignItems: "center",
+                    width: screenConstrainedWidth + 4,
                   }}
                   onContextMenu={(e) => {
                     e.preventDefault();
                   }}
-                />
-                <animated.div
-                  style={{
-                    display,
-                    backgroundColor: darkness,
-                    width: "100%",
-                    // width: "calc(100%+4px)",
-                    height: "100%",
-                    // width: screenConstrainedWidth,
-                    // height: screenConstrainedHeight,
-                    position: "absolute",
-                    top: 0,
-                  }}
-                />
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`${pages[i]}`}
+                    alt="manga"
+                    width={screenConstrainedWidth}
+                    height={screenConstrainedHeight}
+                    style={{
+                      position: "relative",
+                      marginLeft: "2px",
+                      marginRight: "2px",
+                    }}
+                    onDragStart={(e) => {
+                      e.preventDefault();
+                    }}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                    }}
+                  />
+                  <animated.div
+                    style={{
+                      display,
+                      backgroundColor: darkness,
+                      width: screenConstrainedWidth + 4,
+                      position: "absolute",
+                      top: 0,
+                    }}
+                  />
+                </animated.div>
               </animated.div>
             </animated.div>
           );
@@ -697,7 +704,7 @@ export default function App() {
     return {
       x: i * state.viewport.width,
       scale: 1,
-      display: "block",
+      display: "flex",
       backgroundColor: "#000",
       scaledWidth: 0,
       scaledHeight: 0,
@@ -762,7 +769,7 @@ export default function App() {
             from: {
               x: xOrigin,
               scale: scaleFactor,
-              display: "block",
+              display: "flex",
               backgroundColor: "#000",
               scaledWidth,
               scaledHeight,
@@ -840,7 +847,7 @@ export default function App() {
               to: {
                 x: xOrigin,
                 scale: scaleFactor,
-                display: "block",
+                display: "flex",
                 backgroundColor: "#000",
                 scaledWidth,
                 scaledHeight,
@@ -890,6 +897,8 @@ export default function App() {
       100
   );
 
+  const [isZoomActive, setIsZoomActive] = React.useState(false);
+
   return (
     <>
       <Head>
@@ -910,12 +919,17 @@ export default function App() {
       </Head>
       <div className="flex fill center">
         {state.ready ? (
-          <Viewpager state={state} springProps={springProps} />
+          <Viewpager
+            state={state}
+            springProps={springProps}
+            isZoomActive={isZoomActive}
+            setIsZoomActive={setIsZoomActive}
+          />
         ) : (
           `A moment please ${loadingPourcentage}%`
         )}
       </div>
-      {state.ready && !iOS && <ControlBar />}
+      {state.ready && !iOS && <ControlBar isZoomActive={isZoomActive} />}
     </>
   );
 }
