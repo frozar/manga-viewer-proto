@@ -16,11 +16,12 @@ const pages = [
   "https://lelscans.net/mangas/one-piece/1028/06.png",
 ];
 
-const initialIndex = 0;
+const initialIndex = 4;
 let currentImageIndex = initialIndex;
 
 const isNextToCurrentImage = (currentIndex, i) => {
-  const neighbourhood = 3;
+  // const neighbourhood = 3;
+  const neighbourhood = 1;
   return currentIndex - neighbourhood <= i && i <= currentIndex + neighbourhood;
 };
 
@@ -144,6 +145,7 @@ const computeXoriginAnimation = (
     );
     const currentScaledWidth =
       currentScreenConstrainedWidth * currentScaleAnimation + imageMargin;
+    // const currentScaledWidth = currentScreenConstrainedWidth + imageMargin;
     xOrigin = nextXOffsetOrigin - currentScaledWidth - xOriginMargin;
   } else if (i - currentIndex === 0) {
     const [screenConstrainedWidth] = screenConstrainedImageSize(
@@ -179,6 +181,7 @@ const computeXoriginAnimation = (
     );
     const previousScaledWidth =
       previousScreenConstrainedWidth * scaleAnimation + imageMargin;
+    // const previousScaledWidth = previousScreenConstrainedWidth + imageMargin;
 
     xOrigin = previousXOffsetOrigin + previousScaledWidth + xOriginMargin;
   }
@@ -194,8 +197,11 @@ function Viewpager(props) {
 
   const isDragging = React.useRef(true);
   const draggingModeSet = React.useRef(false);
-  const draggingTimeoutId = React.useRef(null);
+  const isTimeThresholdPassed = React.useRef(false);
   const initialTimeStamp = React.useRef(0);
+  const xTransformOriginInit = React.useRef(null);
+  const yTransformOriginInit = React.useRef(null);
+  const zoomElapseTimeThreshold = 200;
 
   const bind = useDrag(
     ({
@@ -205,6 +211,7 @@ function Viewpager(props) {
       cancel,
       timeStamp,
       currentTarget,
+      xy: [pointerX, pointerY],
     }) => {
       // Detect if user is dragging or not
       // TODO: if user is not dragging, trigger a zoom
@@ -214,22 +221,28 @@ function Viewpager(props) {
       if (indexOfDraggingImage !== currentImageIndex) {
         isDragging.current = true;
         draggingModeSet.current = true;
+        isTimeThresholdPassed.current = true;
 
         if (!active) {
-          draggingTimeoutId.current = null;
           initialTimeStamp.current = 0;
           isDragging.current = true;
           draggingModeSet.current = false;
+          isTimeThresholdPassed.current = false;
         }
       } else {
         if (initialTimeStamp.current === 0) {
           initialTimeStamp.current = timeStamp;
           isDragging.current = true;
           draggingModeSet.current = false;
+          isTimeThresholdPassed.current = false;
         } else {
           const elapseTime = timeStamp - initialTimeStamp.current;
           // console.log("elapseTime", elapseTime, "Math.abs(mx)", Math.abs(mx));
-          if (200 < elapseTime && !draggingModeSet.current) {
+          if (
+            zoomElapseTimeThreshold < elapseTime &&
+            !draggingModeSet.current
+          ) {
+            isTimeThresholdPassed.current = true;
             if (Math.abs(mx) < 10) {
               isDragging.current = false;
             }
@@ -237,18 +250,102 @@ function Viewpager(props) {
           }
         }
         if (!active) {
-          draggingTimeoutId.current = null;
           initialTimeStamp.current = 0;
           isDragging.current = true;
           draggingModeSet.current = false;
+          isTimeThresholdPassed.current = false;
+          xTransformOriginInit.current = null;
+          yTransformOriginInit.current = null;
         }
       }
 
-      // If the move in x direction is above a certain threshold,
-      // update image to show
+      const isZoomActive =
+        active && !isDragging.current && isTimeThresholdPassed.current;
+
       const isDragActive = active && isDragging.current;
       const thresholdMx = Math.min(viewport.width / 5, 150);
-      if (isDragActive && thresholdMx < Math.abs(mx)) {
+      if (isZoomActive) {
+        api.start((i) => {
+          // If image is not next the to current image, don't display
+          // if (!isNextToCurrentImage(currentImageIndex, i)) {
+          if (currentImageIndex !== i) {
+            const boxShadow = "none";
+            return {
+              display: "none",
+              backgroundColor: "#000",
+              boxShadow,
+            };
+          } else {
+            // Compute xOrigin
+            const xOrigin = computeXoriginAnimation(
+              currentImageIndex,
+              i,
+              images,
+              viewport,
+              true,
+              0
+            );
+
+            const scale = currentImageIndex === i ? 1.8 : 1;
+            const display = currentImageIndex === i ? "block" : "none";
+
+            // if (currentImageIndex === i) {
+            //   // console.log("scale", scale);
+            //   console.log("pointerX", pointerX);
+            //   console.log("pointerY", pointerY);
+            //   // pointerX
+            // }
+            const [screenConstrainedWidth, screenConstrainedHeight] =
+              screenConstrainedImageSize(images[pages[i]], viewport);
+            // transform-origin: "left center"
+            // const xTransformOrigin = xOrigin;
+            // const xTransformOrigin = xOrigin + screenConstrainedWidth / 2;
+            const xTransformOrigin = xOrigin;
+            // const yTransformOrigin = screenConstrainedHeight / 2;
+            // const yTransformOrigin = 0;
+            const yTransformOrigin = screenConstrainedHeight / 2;
+            const pointerXTransform = pointerX - xTransformOrigin;
+            const pointerYTransform = pointerY - yTransformOrigin;
+            if (xTransformOriginInit.current === null) {
+              // xTransformOriginInit.current =
+              //   (xTransformOrigin - pointerX) * scale;
+              // xTransformOriginInit.current = xOrigin;
+              // xTransformOriginInit.current = xTransformOrigin * scale; // - pointerX;
+              // xTransformOriginInit.current = 0;
+              xTransformOriginInit.current =
+                xOrigin - pointerXTransform * scale;
+              // console.log(
+              //   "xTransformOriginInit.current",
+              //   xTransformOriginInit.current
+              // );
+              // console.log("pointerXTransform", pointerXTransform);
+              // console.log(
+              //   "res",
+              //   xTransformOriginInit.current + pointerXTransform
+              // );
+            }
+            if (yTransformOriginInit.current === null) {
+              // yTransformOriginInit.current =
+              //   (yTransformOrigin - pointerY) * scale;
+              // yTransformOriginInit.current = 0;
+              yTransformOriginInit.current =
+                (yTransformOrigin - pointerY) * scale;
+            }
+            return {
+              // x: xOrigin,
+              // y: 0,
+              // xTransform: xTransformOriginInit.current + pointerXTransform,
+              // yTransform: yTransformOriginInit.current + pointerYTransform,
+              scale,
+              display,
+              x: xTransformOriginInit.current + pointerXTransform,
+              y: yTransformOriginInit.current + pointerYTransform,
+            };
+          }
+        });
+      } else if (isDragActive && thresholdMx < Math.abs(mx)) {
+        // If the move in x direction is above a certain threshold,
+        // update image to show
         const xIncrement = 0 < xDir ? -1 : 1;
         const toClamp = currentImageIndex + xIncrement;
         const lower = 0;
@@ -256,6 +353,7 @@ function Viewpager(props) {
         currentImageIndex = clamp(toClamp, lower, upper);
         cancel();
       } else {
+        // Animation and end of the animation
         api.start((i) => {
           // If image is not next the to current image, don't display
           if (!isNextToCurrentImage(currentImageIndex, i)) {
@@ -339,15 +437,17 @@ function Viewpager(props) {
               animationPourcentage
             );
             const darkness = isDragActive ? darknessAnimation : darknessOrigin;
-
             return {
               x,
+              y: 0,
               scale,
               display: "block",
               backgroundColor: interpolateBackgroundColor,
               scaledWidth,
               scaledHeight,
               darkness,
+              xTransform: 0,
+              yTransform: 0,
             };
           }
         });
@@ -445,16 +545,19 @@ function Viewpager(props) {
         (
           {
             x,
+            y,
             display,
             scale,
             backgroundColor,
             scaledWidth,
             scaledHeight,
             darkness,
+            xTransform,
+            yTransform,
           },
           i
         ) => {
-          let [screenConstrainedWidth, screenConstrainedHeight] =
+          const [screenConstrainedWidth, screenConstrainedHeight] =
             screenConstrainedImageSize(images[pages[i]], viewport);
 
           return (
@@ -465,18 +568,29 @@ function Viewpager(props) {
               style={{
                 display,
                 x,
+                y,
                 backgroundColor,
                 zIndex: pages.length - i,
+                scale,
+                transformOrigin: "left center",
+              }}
+              onContextMenu={(e) => {
+                e.preventDefault();
               }}
             >
               <animated.div
                 style={{
-                  scale,
+                  // scale,
+                  // x: xTransform,
+                  // y: yTransform,
                   display: "flex",
                   alignItems: "center",
-                  // transformOrigin: "bottom center",
-                  transformOrigin: "left",
-                  width: scaledWidth,
+                  // transformOrigin: "left center",
+                  // width: scaledWidth,
+                  width: screenConstrainedWidth + 4,
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
                 }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -497,16 +611,20 @@ function Viewpager(props) {
                     e.preventDefault();
                   }}
                 />
+                <animated.div
+                  style={{
+                    display,
+                    backgroundColor: darkness,
+                    width: "100%",
+                    // width: "calc(100%+4px)",
+                    height: "100%",
+                    // width: screenConstrainedWidth,
+                    // height: screenConstrainedHeight,
+                    position: "absolute",
+                    top: 0,
+                  }}
+                />
               </animated.div>
-              <animated.div
-                style={{
-                  backgroundColor: darkness,
-                  width: "100%",
-                  height: "100%",
-                  position: "absolute",
-                  top: 0,
-                }}
-              />
             </animated.div>
           );
         }
@@ -584,6 +702,9 @@ export default function App() {
       scaledWidth: 0,
       scaledHeight: 0,
       darkness: "rgba(0, 0, 0, 0)",
+      y: 0,
+      xTransform: 0,
+      yTransform: 0,
     };
   });
 
