@@ -16,7 +16,7 @@ const pages = [
   "https://lelscans.net/mangas/one-piece/1028/06.png",
 ];
 
-const initialIndex = 4;
+const initialIndex = 0;
 let currentImageIndex = initialIndex;
 
 const isNextToCurrentImage = (currentIndex, i) => {
@@ -213,7 +213,8 @@ function Viewpager(props) {
       xy: [pointerX, pointerY],
     }) => {
       // Detect if user is dragging or not
-      const pagesURL = currentTarget.children[0].children[0].children[0].src;
+      // const pagesURL = currentTarget.children[0].children[0].children[0].src;
+      const pagesURL = currentTarget.children[0].children[0].src;
       const indexOfDraggingImage = pages.indexOf(pagesURL);
       if (indexOfDraggingImage !== currentImageIndex) {
         isDragging.current = true;
@@ -290,7 +291,7 @@ function Viewpager(props) {
 
             // const scale = currentImageIndex === i ? 1.75 : 1;
             // const display = currentImageIndex === i ? "block" : "none";
-            const scale = 1.75;
+            const scale = 1.5;
             const display = active ? "block" : "flex";
 
             // if (currentImageIndex === i) {
@@ -307,7 +308,8 @@ function Viewpager(props) {
             const xTransformOrigin = xOrigin;
             // const yTransformOrigin = screenConstrainedHeight / 2;
             // const yTransformOrigin = 0;
-            const yTransformOrigin = screenConstrainedHeight / 2;
+            // const yTransformOrigin = screenConstrainedHeight / 2;
+            const yTransformOrigin = viewport.height / 2;
             const pointerXTransform = pointerX - xTransformOrigin;
             const pointerYTransform = pointerY - yTransformOrigin;
             if (xTransformOriginInit.current === null) {
@@ -332,14 +334,15 @@ function Viewpager(props) {
               // yTransformOriginInit.current =
               //   (yTransformOrigin - pointerY) * scale;
               // yTransformOriginInit.current = 0;
+              const yOffset = (viewport.height - screenConstrainedHeight) / 2;
               yTransformOriginInit.current =
-                (yTransformOrigin - pointerY) * scale;
+                (yTransformOrigin - pointerY) * scale + yOffset;
+              // console.log(
+              //   "res",
+              //   yTransformOriginInit.current + pointerYTransform
+              // );
             }
             return {
-              // x: xOrigin,
-              // y: 0,
-              // xTransform: xTransformOriginInit.current + pointerXTransform,
-              // yTransform: yTransformOriginInit.current + pointerYTransform,
               scale,
               display,
               x: xTransformOriginInit.current + pointerXTransform,
@@ -574,7 +577,6 @@ function Viewpager(props) {
               style={{
                 display,
                 x,
-                y,
                 backgroundColor,
                 zIndex: pages.length - i,
                 alignItems: "center",
@@ -585,53 +587,44 @@ function Viewpager(props) {
             >
               <animated.div
                 style={{
+                  y,
                   scale,
                   transformOrigin: "left center",
                   width: scaledWidth,
                   height: screenConstrainedHeight,
-                  display: "flex",
-                  alignItems: "center",
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
                 }}
               >
-                <animated.div
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`${pages[i]}`}
+                  alt="manga"
+                  width={screenConstrainedWidth}
+                  height={screenConstrainedHeight}
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    width: screenConstrainedWidth + 4,
+                    position: "relative",
+                    marginLeft: "2px",
+                    marginRight: "2px",
+                  }}
+                  onDragStart={(e) => {
+                    e.preventDefault();
                   }}
                   onContextMenu={(e) => {
                     e.preventDefault();
                   }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`${pages[i]}`}
-                    alt="manga"
-                    width={screenConstrainedWidth}
-                    height={screenConstrainedHeight}
-                    style={{
-                      position: "relative",
-                      marginLeft: "2px",
-                      marginRight: "2px",
-                    }}
-                    onDragStart={(e) => {
-                      e.preventDefault();
-                    }}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                    }}
-                  />
-                  <animated.div
-                    style={{
-                      display,
-                      backgroundColor: darkness,
-                      width: screenConstrainedWidth + 4,
-                      position: "absolute",
-                      top: 0,
-                    }}
-                  />
-                </animated.div>
+                />
               </animated.div>
+              <animated.div
+                style={{
+                  display,
+                  backgroundColor: darkness,
+                  width: "100%",
+                  position: "absolute",
+                  top: 0,
+                }}
+              />
             </animated.div>
           );
         }
